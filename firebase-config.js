@@ -1,8 +1,7 @@
-// Hier deine Firebase-Daten eintragen (siehe README.md, Schritt 1)
 export const firebaseConfig = {
-  apiKey: "DEIN_API_KEY",
-  authDomain: "DEIN_PROJEKT.firebaseapp.com",
-  databaseURL: "https://DEIN_PROJEKT-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "DEIN_PROJEKT",
-  appId: "DEINE_APP_ID"
+  apiKey: "AIzaSyC5Xz_RCioJ7iFBjrKzYUM5RCS0u_n00-I",
+  authDomain: "manhunt-80416.firebaseapp.com",
+  databaseURL: "https://manhunt-80416-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "manhunt-80416",
+  appId: "1:772459220973:web:3486960371dc762b3361e4"
 };
