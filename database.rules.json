@@ -1,0 +1,1 @@
+{ "rules": { "games": { "$code": { ".read": "auth != null", ".write": "auth != null" } } } }
