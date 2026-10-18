@@ -11,7 +11,8 @@ const toast=t=>{const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeo
 const show=id=>document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===id));
 const R=p=>ref(db,'games/'+S.code+(p?'/'+p:'')),role=id=>(S.pl[id]||{}).role,cau=id=>(S.pl[id]||{}).caught;
 const SET=[['nh','Jäger',1,6,1,v=>v],['r0','Spielfeld-Radius',100,3000,50,v=>v+' m'],['step','Kreis schrumpft alle',1,15,1,v=>v+' Min'],['head','Vorsprung Gejagte',0,300,15,v=>v?v+' s':'aus'],['dur','Spieldauer',10,90,5,v=>v+' Min'],['ping','Radar-Ping (Jäger sehen Gejagte)',0,10,1,v=>v?'alle '+v+' Min':'aus']];
-const tiles=m=>L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(m);
+const tiles=m=>L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dk',attribution:'© OpenStreetMap'}).addTo(m);
+document.head.insertAdjacentHTML('beforeend','<style>.dk{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.7)}</style>');
 const ring=(c,r)=>{const o=[];for(let i=0;i<72;i++){const a=i/72*6.2832;o.push([c[0]+Math.sin(a)*r/110540,c[1]+Math.cos(a)*r/(111320*Math.cos(c[0]*Math.PI/180))])}return o};
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function zone(g,now,ko){const el=now-g.startAt-g.head*1000,st=g.step*60000;let k=el<0?0:Math.floor(el/st);if(ko!=null)k=ko;
