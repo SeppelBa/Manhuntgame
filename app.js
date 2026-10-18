@@ -18,7 +18,7 @@ function zone(g,now,ko){const el=now-g.startAt-g.head*1000,st=g.step*60000;let k
  const Q=rng(g.seed);let r=g.r0,x=0,y=0;for(let i=0;i<k;i++){const n=Math.max(30,r*.78),a=Q()*6.2832,d=Math.sqrt(Q()*1)*(r-n);x+=Math.cos(a)*d;y+=Math.sin(a)*d;r=n}
  return{x,y,r,k,left:el<0?-el:st-el%st}}
 function gps(){if(S.w!=null)return;if(!navigator.geolocation){S.gps='nicht verfügbar';return}
- S.w=navigator.geolocation.watchPosition(p=>{S.pos={lat:p.coords.latitude,lng:p.coords.longitude};S.gps='±'+Math.round(p.coords.accuracy)+' m'},e=>{S.gps=e.code==1?'verweigert':'Fehler'},{enableHighAccuracy:true,maximumAge:2000,timeout:20000});wake()}
+ S.w=navigator.geolocation.watchPosition(p=>{const f=!S.pos;S.pos={lat:p.coords.latitude,lng:p.coords.longitude};S.gps='±'+Math.round(p.coords.accuracy)+' m';if(f)pub()},e=>{S.gps=e.code==1?'verweigert':'Fehler'},{enableHighAccuracy:true,maximumAge:2000,timeout:20000});wake()}
 const wake=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){wake();pub()}});
 const where=()=>new Promise(r=>{const f={lat:51.16,lng:10.45,far:1};if(!navigator.geolocation)return r(f);navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(f),{timeout:7000,enableHighAccuracy:true})});
@@ -44,9 +44,9 @@ $('#lv').onclick=$('#lv2').onclick=leave;
 function render(){const m=S.meta;if(!S.code)return;if(!m){show('wait');return}
  if(m.status==='lobby'){show('lobby');rLobby()}else if(m.status==='run'){if(!$('#game').classList.contains('on')){show('game');startGame()}}else{show('end');rEnd()}}
 function rLobby(){const m=S.meta,h=m.host===uid,c=[m.center.lat,m.center.lng];$('#lc').textContent=S.code;
- if(!S.lm){S.lm=L.map('lm',{zoomControl:false});tiles(S.lm);S.lc=L.circle(c,{color:'#ff2d55',fillOpacity:.12,weight:3}).addTo(S.lm);S.lk=L.circleMarker(c,{radius:6,color:'#19e6ff',fillOpacity:1}).addTo(S.lm);
+ if(!S.lm){S.lm=L.map('lm',{zoomControl:false}).setView(c,15);tiles(S.lm);S.lc=L.circle(c,{color:'#ff2d55',fillOpacity:.12,weight:3}).addTo(S.lm);S.lk=L.circleMarker(c,{radius:6,color:'#19e6ff',fillOpacity:1}).addTo(S.lm);
   S.lm.on('click',e=>{if(S.meta.host===uid)update(R('meta'),{center:{lat:e.latlng.lat,lng:e.latlng.lng}})})}
- S.lc.setLatLng(c).setRadius(m.r0);S.lk.setLatLng(c);setTimeout(()=>{S.lm.invalidateSize();S.lm.fitBounds(S.lc.getBounds(),{padding:[16,16]})},60);
+ S.lc.setLatLng(c).setRadius(m.r0);S.lk.setLatLng(c);setTimeout(()=>{S.lm.invalidateSize();S.lm.fitBounds(L.latLngBounds(ring(c,m.r0)),{padding:[16,16]})},60);
  $('#lh').textContent=h?'Tippe auf die Karte, um den Mittelpunkt des Spielfelds zu setzen.':'Der Host legt das Spielfeld fest.';$('#me').hidden=!h;
  $('#st').innerHTML=SET.map(([k,l,a,b,s,f])=>`<div class="sr"><span>${l}</span><b id="v_${k}">${f(m[k])}</b></div>`+(h?`<input type="range" data-k="${k}" min="${a}" max="${b}" step="${s}" value="${m[k]}">`:'')).join('');
  $('#st').querySelectorAll('input').forEach(i=>{const k=i.dataset.k,f=SET.find(x=>x[0]===k)[5];i.oninput=()=>{$('#v_'+k).textContent=f(+i.value);if(k==='r0')S.lc.setRadius(+i.value)};i.onchange=()=>update(R('meta'),{[k]:+i.value})});
@@ -57,9 +57,9 @@ function rPl(){const m=S.meta;if(!m||m.status!=='lobby')return;const l=Object.va
 $('#go').onclick=()=>{const ids=Object.keys(S.pl).sort(()=>Math.random()-.5),nh=Math.min(S.meta.nh,ids.length-1),u={'meta/status':'run','meta/startAt':Date.now()+5000,'meta/seed':Math.random()*1e9|0};
  ids.forEach((k,i)=>u['players/'+k+'/role']=i<nh?'h':'g');update(R(),u)};
 function startGame(){const m=S.meta,c=[m.center.lat,m.center.lng];$('#ac').textContent=role(uid)==='h'?'🎯 Fangen':'🏳 Aufgeben';
- if(!S.gm){S.gm=L.map('gm',{zoomControl:false});tiles(S.gm);S.dim=L.polygon([],{stroke:false,fillColor:'#ff2d55',fillOpacity:.18}).addTo(S.gm);
+ if(!S.gm){S.gm=L.map('gm',{zoomControl:false}).setView(c,15);tiles(S.gm);S.dim=L.polygon([],{stroke:false,fillColor:'#ff2d55',fillOpacity:.18}).addTo(S.gm);
   S.zn=L.circle(c,{color:'#19e6ff',weight:2,dashArray:'8 6',fill:false}).addTo(S.gm);S.zc=L.circle(c,{color:'#ff2d55',weight:3,fill:false}).addTo(S.gm)}
- setTimeout(()=>{S.gm.invalidateSize();S.gm.fitBounds(L.circle(c,{radius:m.r0}).getBounds(),{padding:[10,10]})},80)}
+ setTimeout(()=>{S.gm.invalidateSize();S.gm.fitBounds(L.latLngBounds(ring(c,m.r0)),{padding:[10,10]})},80)}
 function visible(){const m=S.meta,now=Date.now(),mr=role(uid),o=[];
  for(const[id,p]of Object.entries(S.pl)){if(p.lat==null||id===uid)continue;const ping=m.ping>0&&mr==='h'&&p.role==='g'&&now>m.startAt+m.head*1000&&(now-m.startAt)%(m.ping*60000)<10000;
   if(p.role===mr||ping||m.status==='end')o.push({...p,uid:id,r:p.role,ping,stale:now-p.t>30000})}return o}
@@ -92,11 +92,11 @@ function tick(){const m=S.meta;if(!m||m.status!=='run'||!S.gm)return;const now=D
  drawMap(z,zn);
  const gs=Object.values(S.pl).filter(p=>p.role==='g'),all=gs.length&&gs.every(p=>p.caught);
  if(!S.end&&(all||now>end)){S.end=1;update(R('meta'),{status:'end',winner:all?'h':'g'}).catch(()=>{})}
- if(++S.n%4==0)pub()}
+}
 function rEnd(){const m=S.meta,w=m.winner==='h';$('#wn').textContent=w?'JÄGER GEWINNEN':'GEJAGTE GEWINNEN';$('#wn').style.color=w?'var(--rd)':'var(--cy)';
  $('#rs').innerHTML=Object.values(S.pl).map(p=>`<div class="sr"><span>${esc(p.name)}</span><span class="${p.role==='h'?'rd':'cy'}">${p.role==='h'?'Jäger':p.caught?'gefangen':'entkommen'}</span></div>`).join('');document.body.classList.remove('al')}
 (async()=>{$('#nm').value=LS.g('mh_name')||'';S.name=$('#nm').value;
  if(!FC.apiKey||FC.apiKey.startsWith('DEIN')){$('#err').textContent='Firebase ist noch nicht eingerichtet (siehe README.md, Schritt 1).';$('#mk').disabled=$('#jn').disabled=true;return}
  try{const app=initializeApp(FC),au=getAuth(app);db=getDatabase(app);await au.authStateReady();uid=au.currentUser?au.currentUser.uid:(await signInAnonymously(au)).user.uid}
  catch(e){$('#err').textContent='Anmeldung fehlgeschlagen: '+(e.code||e.message);return}
- gps();setInterval(tick,1000);try{await resume()}catch(e){}})();
+ gps();setInterval(tick,1000);setInterval(pub,4000);try{await resume()}catch(e){}})();
