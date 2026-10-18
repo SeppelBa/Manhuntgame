@@ -23,6 +23,7 @@ function gps(){if(S.w!=null)return;if(!navigator.geolocation){S.gps='nicht verf�
 const wake=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){wake();pub()}});
 const where=()=>new Promise(r=>{const f={lat:51.16,lng:10.45,far:1};if(!navigator.geolocation)return r(f);navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(f),{timeout:7000,enableHighAccuracy:true})});
+const rd=p=>new Promise((ok,no)=>onValue(ref(db,p),ok,no,{onlyOnce:true}));
 const nameOk=()=>{const n=$('#nm').value.trim();if(!n){toast('Bitte Namen eingeben');return 0}S.name=n;LS.s('mh_name',n);return 1};
 function enter(c){S.code=c;LS.s('mh_code',c);S.k=-1;S.end=0;S.pl={};S.meta=null;show('wait');
  S.un=[onValue(R('meta'),s=>{S.meta=s.val();render()},e=>toast('Verbindung: '+e.code)),onValue(R('players'),s=>{S.pl=s.val()||{};rPl()},()=>{})];pub()}
@@ -30,17 +31,17 @@ function leave(){S.un.forEach(f=>f());S.un=[];S.code=null;S.meta=null;S.pl={};LS
 function pub(){if(!S.code||!S.pl[uid])return;const o={t:Date.now()};if(S.pos){o.lat=S.pos.lat;o.lng=S.pos.lng}update(R('players/'+uid),o).catch(()=>{})}
 async function create(){const c=[...Array(4)].map(()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.random()*31|0]).join(''),p=await where();
  await set(ref(db,'games/'+c),{meta:{host:uid,status:'lobby',nh:1,r0:p.far?5000:500,step:5,head:60,dur:30,ping:0,center:{lat:p.lat,lng:p.lng}},players:{[uid]:{name:S.name,t:Date.now()}}});enter(c)}
-async function join(c){c=c.toUpperCase();const m=(await get(ref(db,`games/${c}/meta`))).val();if(!m)return toast('Code nicht gefunden');if(m.status==='end')return toast('Das Spiel ist schon vorbei');
- const pl=(await get(ref(db,`games/${c}/players`))).val()||{};
- if(!pl[uid]){const old=Object.entries(pl).find(([k,p])=>p.name.toLowerCase()===S.name.toLowerCase());
+async function join(c){c=c.toUpperCase();const m=(await rd(`games/${c}/meta`)).val();if(!m)return toast('Code nicht gefunden');if(m.status==='end')return toast('Das Spiel ist schon vorbei');
+ const pl=(await rd(`games/${c}/players`)).val()||{};
+ if(!pl[uid]){const old=Object.entries(pl).find(([k,p])=>(p.name||'').toLowerCase()===S.name.toLowerCase());
   if(m.status==='lobby'){if(old)return toast('Dieser Name ist schon vergeben');await set(ref(db,`games/${c}/players/${uid}`),{name:S.name,t:Date.now()})}
   else if(old)await update(ref(db,`games/${c}/players`),{[uid]:{...old[1],t:Date.now()},[old[0]]:null});
   else return toast('Spiel läuft schon. Zum Zurückkehren exakt den alten Namen nutzen.')}
  enter(c)}
-async function resume(){const c=LS.g('mh_code');if(!c)return;const m=(await get(ref(db,`games/${c}/meta`))).val(),me=(await get(ref(db,`games/${c}/players/${uid}`))).val();
+async function resume(){const c=LS.g('mh_code');if(!c)return;const m=(await rd(`games/${c}/meta`)).val(),me=(await rd(`games/${c}/players/${uid}`)).val();
  if(m&&m.status!=='end'&&me){S.name=me.name;enter(c);toast('Willkommen zurück im Spiel!')}else LS.s('mh_code',null)}
-$('#mk').onclick=async()=>{if(!nameOk())return;gps();try{await create()}catch(e){toast('Fehler: '+e.code)}};
-$('#jn').onclick=async()=>{if(!nameOk())return;const c=$('#cd').value.trim();if(c.length<4)return toast('Code mit 4 Zeichen eingeben');gps();try{await join(c)}catch(e){toast('Fehler: '+e.code)}};
+$('#mk').onclick=async()=>{if(!nameOk())return;gps();try{await create()}catch(e){toast('Fehler: '+(e.code||e.message))}};
+$('#jn').onclick=async()=>{if(!nameOk())return;const c=$('#cd').value.trim();if(c.length<4)return toast('Code mit 4 Zeichen eingeben');gps();try{await join(c)}catch(e){toast('Fehler: '+(e.code||e.message))}};
 $('#lv').onclick=$('#lv2').onclick=leave;
 function render(){const m=S.meta;if(!S.code)return;if(!m){show('wait');return}
  if(m.status==='lobby'){show('lobby');rLobby()}else if(m.status==='run'){if(!$('#game').classList.contains('on')){show('game');startGame()}}else{show('end');rEnd()}}
