@@ -11,7 +11,7 @@ const M=(p,c)=>({x:(p.lng-c.lng)*111320*Math.cos(c.lat*Math.PI/180),y:(p.lat-c.l
 const toast=t=>{const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,2800)};
 const show=id=>document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===id));
 const R=p=>ref(db,'games/'+S.code+(p?'/'+p:'')),role=id=>(S.pl[id]||{}).role,cau=id=>{const p=S.pl[id]||{};return p.caught&&p.role==='g'};
-const SET=[['nh','Jäger',1,6,1,v=>v],['r0','Spielfeld-Radius',100,3000,50,v=>v+' m'],['step','Kreis schrumpft alle',1,15,1,v=>v+' Min'],['shr','Schrumpfdauer (live)',10,120,5,v=>v+' s'],['head','Vorsprung Gejagte',0,300,15,v=>v?v+' s':'aus'],['dur','Spieldauer',10,90,5,v=>v+' Min'],['ping','Radar-Ping (Jäger sehen Gejagte)',0,10,1,v=>v?'alle '+v+' Min':'aus'],['pts','★ Punkte für Gejagte (Aufgabe)',0,20,1,v=>v?v+' Stück':'aus'],['alarm','Nähe-Alarm (Gejagte)',0,1,1,v=>v?'an':'aus'],['free','Befreien (nur ohne Infektion)',0,1,1,v=>v?'an':'aus'],['inf','Infektionsmodus (Gefangene werden Jäger)',0,1,1,v=>v?'an':'aus']];
+const SET=[['nh','Jäger',1,6,1,v=>v],['r0','Spielfeld-Radius',100,3000,50,v=>v+' m'],['step','Kreis schrumpft alle',1,15,1,v=>v+' Min'],['shr','Schrumpfdauer (live)',10,120,5,v=>v+' s'],['head','Vorsprung Gejagte',0,300,15,v=>v?v+' s':'aus'],['dur','Spieldauer',10,90,5,v=>v+' Min'],['ping','Radar-Ping (Jäger sehen Gejagte)',0,10,1,v=>v?'alle '+v+' Min':'aus'],['pts','★ Punkte für Gejagte (Aufgabe)',0,20,1,v=>v?v+' Stück':'aus'],['alarm','Nähe-Alarm (Gejagte)',0,1,1,v=>v?'an':'aus'],['free','Befreien (nur ohne Infektion)',0,1,1,v=>v?'an':'aus'],['inf','Infektionsmodus (Gefangene werden Jäger)',0,1,1,v=>v?'an':'aus'],['oreveal','Außerhalb: Jäger sehen dich nach',0,60,5,v=>v?v+' s':'aus'],['ocatch','Außerhalb: gefangen nach insgesamt',0,180,10,v=>v?v+' s':'aus']];
 const tiles=m=>L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dk',attribution:'© OpenStreetMap'}).addTo(m);
 document.head.insertAdjacentHTML('beforeend','<style>.dk{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.7)}.pt{width:14px;height:14px;background:#ffe14d;transform:rotate(45deg);border-radius:3px;box-shadow:0 0 12px #ffe14d}body.nh::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1400;box-shadow:inset 0 0 60px 8px #ffb020;animation:bl var(--nd,1s) infinite}</style>');
 const ring=(c,r)=>{const o=[];for(let i=0;i<72;i++){const a=i/72*6.2832;o.push([c[0]+Math.sin(a)*r/110540,c[1]+Math.cos(a)*r/(111320*Math.cos(c[0]*Math.PI/180))])}return o};
@@ -30,10 +30,10 @@ const rd=p=>new Promise((ok,no)=>onValue(ref(db,p),ok,no,{onlyOnce:true}));
 const nameOk=()=>{const n=$('#nm').value.trim();if(!n){toast('Bitte Namen eingeben');return 0}S.name=n;LS.s('mh_name',n);return 1};
 function enter(c){S.code=c;LS.s('mh_code',c);S.k=-1;S.end=0;S.pl={};S.meta=null;S.chat={};S.cinit=0;S.cn=0;S.ck=null;S.so='';show('wait');
  S.un=[onValue(R('meta'),s=>{S.meta=s.val();render()},e=>toast('Verbindung: '+e.code)),onValue(R('players'),s=>{S.pl=s.val()||{};rPl();rChat()},()=>{}),onValue(query(R('chat'),limitToLast(60)),s=>{S.chat=s.val()||{};rChat()},()=>{})];pub()}
-function leave(){S.un.forEach(f=>f());S.un=[];S.code=null;S.meta=null;S.pl={};LS.s('mh_code',null);$('#cbtn').hidden=true;$('#abtn').hidden=true;$('#adm').classList.remove('on');$('#chat').classList.remove('on');document.body.classList.remove('al');$('#sh').hidden=true;show('home')}
+function leave(){S.un.forEach(f=>f());S.un=[];S.code=null;S.meta=null;S.pl={};LS.s('mh_code',null);$('#cbtn').hidden=true;$('#abtn').hidden=true;$('#ibtn').hidden=true;$('#info').classList.remove('on');$('#adm').classList.remove('on');$('#chat').classList.remove('on');document.body.classList.remove('al');$('#sh').hidden=true;show('home')}
 function pub(){if(!S.code||!S.pl[uid])return;const o={t:Date.now(),dist:Math.round(S.dist||0)};if(S.pos){o.lat=S.pos.lat;o.lng=S.pos.lng}update(R('players/'+uid),o).catch(()=>{})}
 async function create(){const c=[...Array(4)].map(()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.random()*31|0]).join(''),p=await where();
- await set(ref(db,'games/'+c),{meta:{host:uid,status:'lobby',nh:1,r0:p.far?5000:500,step:5,shr:30,head:60,dur:30,ping:0,pts:8,alarm:1,free:1,inf:0,center:{lat:p.lat,lng:p.lng}},players:{[uid]:{name:S.name,t:Date.now()}}});enter(c);if(S.adm.auto)addBots(3,p)}
+ await set(ref(db,'games/'+c),{meta:{host:uid,status:'lobby',nh:1,r0:p.far?5000:500,step:5,shr:30,head:60,dur:30,ping:0,pts:8,alarm:1,free:1,inf:0,oreveal:15,ocatch:60,center:{lat:p.lat,lng:p.lng}},players:{[uid]:{name:S.name,t:Date.now()}}});enter(c);if(S.adm.auto)addBots(3,p)}
 async function join(c){c=c.toUpperCase();const m=(await rd(`games/${c}/meta`)).val();if(!m)return toast('Code nicht gefunden');
  const pl=(await rd(`games/${c}/players`)).val()||{};
  if(!pl[uid]){const old=Object.entries(pl).find(([k,p])=>(p.name||'').toLowerCase()===S.name.toLowerCase());
@@ -46,7 +46,7 @@ async function resume(){const c=LS.g('mh_code');if(!c)return;const m=(await rd(`
 $('#mk').onclick=async()=>{if(!nameOk())return;gps();try{await create()}catch(e){toast('Fehler: '+(e.code||e.message))}};
 $('#jn').onclick=async()=>{if(!nameOk())return;const c=$('#cd').value.trim();if(c.length<4)return toast('Code mit 4 Zeichen eingeben');gps();try{await join(c)}catch(e){toast('Fehler: '+(e.code||e.message))}};
 $('#lv').onclick=$('#lv2').onclick=leave;
-function render(){const m=S.meta;if(!S.code)return;if(!m){show('wait');return}$('#cbtn').hidden=false;$('#abtn').hidden=!S.adm.on;
+function render(){const m=S.meta;if(!S.code)return;if(!m){show('wait');return}$('#cbtn').hidden=false;$('#ibtn').hidden=false;$('#abtn').hidden=!S.adm.on;
  if(m.status==='lobby'){show('lobby');rLobby()}else if(m.status==='run'){if(!$('#game').classList.contains('on')){show('game');startGame()}}else{show('end');rEnd()}}
 function rLobby(){const m=S.meta,h=m.host===uid,c=[m.center.lat,m.center.lng];$('#lc').textContent=S.code;
  if(!S.lm){S.lm=L.map('lm',{zoomControl:false}).setView(c,15);tiles(S.lm);S.lc=L.circle(c,{color:'#ff2d55',fillOpacity:.12,weight:3}).addTo(S.lm);S.lk=L.circleMarker(c,{radius:6,color:'#19e6ff',fillOpacity:1}).addTo(S.lm);
@@ -64,7 +64,7 @@ const reset=x=>{const u={...x,'meta/got':null,'meta/winner':null};Object.keys(S.
 const nextRound=()=>{const m=S.meta,ids=Object.keys(S.pl).sort(()=>Math.random()-.5),nh=Math.min(m.nh,ids.length-1),rn=Object.keys(m.hist||{}).length+1,u=reset({'meta/status':'run','meta/startAt':Date.now()+5000,'meta/seed':Math.random()*1e9|0,'meta/round':rn});
  ids.forEach((k,i)=>{const r=i<nh?'h':'g';u['players/'+k+'/role']=r;u['players/'+k+'/rh/'+rn]=r});update(R(),u)};
 const toLobby=()=>update(R(),reset({'meta/status':'lobby'}));
-function startGame(){const m=S.meta,c=[m.center.lat,m.center.lng];$('#ac').textContent=role(uid)==='h'?'🎯 Fangen':'🏳 Aufgeben';S.end=0;S.dist=0;S.pr=null;S.fr=null;S.fs={};S.fl={};S.fa=0;S.lw=0;S.shr=0;S.wk=-1;document.body.classList.remove('al','nh');setTimeout(pub,300);S.pts=genPts(m);S.pd={};Object.values(S.pm||{}).forEach(k=>S.gm&&S.gm.removeLayer(k));S.pm={};
+function startGame(){const m=S.meta,c=[m.center.lat,m.center.lng];$('#ac').textContent=role(uid)==='h'?'🎯 Fangen':'🏳 Aufgeben';S.end=0;S.dist=0;S.pr=null;S.fr=null;S.fs={};S.fl={};S.fa=0;S.lw=0;S.ot=0;S.oc=0;S.lt=0;S.orv=0;S.shr=0;S.wk=-1;document.body.classList.remove('al','nh');setTimeout(pub,300);S.pts=genPts(m);S.pk=0;S.pd={};Object.values(S.pm||{}).forEach(k=>S.gm&&S.gm.removeLayer(k));S.pm={};
  if(m.pts)setTimeout(()=>toast(role(uid)==='g'?'Sammle alle ★ Punkte, ohne gefangen zu werden!':'Verhindere, dass die Gejagten alle ★ Punkte holen!'),1500);
  if(!S.gm){S.gm=L.map('gm',{zoomControl:false}).setView(c,15);S.gm.on('click',e=>{if(S.adm.fake){S.pos={lat:e.latlng.lat,lng:e.latlng.lng};S.gps='Fake-GPS';S.lp=S.pos;pub()}});tiles(S.gm);S.dim=L.polygon([],{stroke:false,fillColor:'#ff2d55',fillOpacity:.18}).addTo(S.gm);
   S.zn=L.circle(c,{color:'#19e6ff',weight:2,dashArray:'8 6',fill:false}).addTo(S.gm);S.zc=L.circle(c,{color:'#ff2d55',weight:3,fill:false}).addTo(S.gm)}
@@ -73,7 +73,9 @@ function visible(){const m=S.meta,now=Date.now(),mr=role(uid),o=[];
  for(const[id,p]of Object.entries(S.pl)){if(p.lat==null||id===uid)continue;const ping=(mr==='h'&&p.role==='g'&&(p.rev||0)>now)||(m.ping>0&&mr==='h'&&p.role==='g'&&now>m.startAt+m.head*1000&&(now-m.startAt)%(m.ping*60000)<10000);
   if(p.role===mr||ping||m.status==='end')o.push({...p,uid:id,r:p.role,ping,stale:now-p.t>30000})}return o}
 const PT=L.divIcon({className:'',iconSize:[14,14],iconAnchor:[7,7],html:'<div class="pt"></div>'});
-function genPts(m){const Q=rng((m.seed||1)+777),c=circ(m,2),o=[];for(let i=0;i<(m.pts||0);i++){const a=Q()*6.2832,d=Math.sqrt(Q())*c.r*.92;o.push({x:c.x+Math.cos(a)*d,y:c.y+Math.sin(a)*d})}return o}
+function ptsAt(m,kk){const Q=rng((m.seed||1)+777),c2=circ(m,2),o=[];for(let i=0;i<(m.pts||0);i++){const a=Q()*6.2832,d=Math.sqrt(Q())*c2.r*.92;o.push({x:c2.x+Math.cos(a)*d,y:c2.y+Math.sin(a)*d})}
+ for(let j=3;j<=kk;j++){const c=circ(m,j);o.forEach((p,i)=>{if(Math.hypot(p.x-c.x,p.y-c.y)>c.r*.92){const W=rng((m.seed||1)+777+i*7919+j),a=W()*6.2832,d=Math.sqrt(W())*c.r*.85;p.x=c.x+Math.cos(a)*d;p.y=c.y+Math.sin(a)*d}})}return o}
+const genPts=m=>ptsAt(m,0);
 const ic=(c,n,pg,st)=>L.divIcon({className:'',iconSize:[14,14],iconAnchor:[7,7],html:`<div class="dot ${c}${pg?' pg':''}" style="opacity:${st?.4:1}"></div><span class="lb">${esc(n||'')}</span>`});
 function drawMap(z,zn){const m=S.meta,c=m.center,ll=o=>[c.lat+o.y/110540,c.lng+o.x/(111320*Math.cos(c.lat*Math.PI/180))],zc=ll(z);
  S.zc.setLatLng(zc).setRadius(z.r);S.zn.setLatLng(ll(zn)).setRadius(zn.r);S.dim.setLatLngs([[[85,-180],[85,180],[-85,180],[-85,-180]],ring(zc,z.r)]);
@@ -82,7 +84,7 @@ function drawMap(z,zn){const m=S.meta,c=m.center,ll=o=>[c.lat+o.y/110540,c.lng+o
   if(!S.mk[p.uid])S.mk[p.uid]=L.marker([p.lat,p.lng],{icon:i,zIndexOffset:p.me?1000:0}).addTo(S.gm);S.mk[p.uid].setLatLng([p.lat,p.lng]).setIcon(i)}
  for(const k in S.mk)if(!seen[k]){S.gm.removeLayer(S.mk[k]);delete S.mk[k]}
 
- const got=m.got||{},sg=role(uid)==='g';(S.pts||[]).forEach((p,i)=>{const on=sg&&!got[i];if(on&&!S.pm[i])S.pm[i]=L.marker(ll(p),{icon:PT,interactive:false}).addTo(S.gm);if(!on&&S.pm[i]){S.gm.removeLayer(S.pm[i]);delete S.pm[i]}});
+ const got=m.got||{},sg=role(uid)==='g';(S.pts||[]).forEach((p,i)=>{const on=sg&&!got[i];if(on&&!S.pm[i])S.pm[i]=L.marker(ll(p),{icon:PT,interactive:false}).addTo(S.gm);else if(on)S.pm[i].setLatLng(ll(p));if(!on&&S.pm[i]){S.gm.removeLayer(S.pm[i]);delete S.pm[i]}});
  if(S.ctr&&S.pos)S.gm.panTo([S.pos.lat,S.pos.lng])}
 $('#ct').onclick=()=>{S.ctr=!S.ctr;$('#ct').style.color=S.ctr?'var(--cy)':''};
 $('#ac').onclick=()=>{const m=S.meta,sh=$('#sh'),cl=()=>sh.hidden=true;
@@ -91,8 +93,13 @@ $('#ac').onclick=()=>{const m=S.meta,sh=$('#sh'),cl=()=>sh.hidden=true;
  sh.innerHTML='<b>Gejagte in 40 m Reichweite</b>'+(near.length?near.map(([id,p])=>`<button class="c" data-u="${id}">${esc(p.name)} fangen</button>`).join(''):'<div class="mu">Niemand in Reichweite.</div>')+'<button class="g" id="n">Schließen</button>';sh.hidden=false;
  sh.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{update(R('players/'+b.dataset.u),{caught:true,by:uid,...(m.inf?{role:'h'}:{})});cl()});$('#n').onclick=cl};
 function tick(){const m=S.meta;if(!m||m.status!=='run'||!S.gm)return;const now=Date.now(),z=zone(m,now),zn=z.n,mr=role(uid),end=m.startAt+m.dur*60000,hd=m.startAt+m.head*1000-now,out=now>=m.startAt;
+ {const kk=z.sh?z.k+1:z.k;if(S.pts&&S.pk!==kk){const od=S.pts;S.pk=kk;S.pts=ptsAt(m,kk);if(mr==='g'&&S.pts.some((p,i)=>!(m.got||{})[i]&&od[i]&&(p.x!==od[i].x||p.y!==od[i].y)))toast('★ Sterne außerhalb sind in den neuen Kreis gesprungen')}}
  let mg=null;if(S.pos){const p=M(S.pos,m.center);mg=z.r-Math.hypot(p.x-z.x,p.y-z.y)}
  const bad=out&&mg!=null&&mg<0;document.body.classList.toggle('al',bad);if(bad&&navigator.vibrate)navigator.vibrate(150);
+ {const dt=Math.min(now-(S.lt||now),1500);S.lt=now;
+  if(bad&&mr==='g'&&!cau(uid)){S.oc=(S.oc||0)+dt;S.ot=(S.ot||0)+dt;
+   if(m.oreveal&&S.oc>=m.oreveal*1000&&now-(S.orv||0)>2000){S.orv=now;update(R('players/'+uid),{rev:now+4000})}
+   if(m.ocatch&&S.ot>=m.ocatch*1000){S.ot=0;S.oc=0;update(R('players/'+uid),{caught:true,by:'zone',...(m.inf?{role:'h'}:{})});toast('Zu lange außerhalb: du wurdest gefangen!')}}else S.oc=0}
  if(z.sh&&!S.shr)toast('⚠ Der Kreis schrumpft! Lauf in den neuen Kreis!');S.shr=z.sh;if(out&&!z.sh&&z.left<=15000&&S.wk!==z.k){S.wk=z.k;toast('Kreis schrumpft in 15 s')}
  $('#hud').innerHTML=`<div class="st ${mr==='h'?'rd':'cy'}">${mr==='h'?'JÄGER':'GEJAGTER'}</div><div class="st"><small>Restzeit</small>${fmt(end-now)}</div><div class="st ${z.sh?'rd':''}"><small>${z.sh?'Schrumpft noch':'Schrumpft in'}</small>${fmt(z.left)}</div><div class="st ${bad?'rd':''}"><small>Rand</small>${mg==null?'–':Math.round(mg)+' m'}</div>`;
  $('#ac').hidden=!!cau(uid);$('#ac').textContent=mr==='h'?'🎯 Fangen':'🏳 Aufgeben';if(S.pr==='g'&&mr==='h')toast('🦠 Du wurdest infiziert, jetzt jagst du!');S.pr=mr;
@@ -100,7 +107,7 @@ function tick(){const m=S.meta;if(!m||m.status!=='run'||!S.gm)return;const now=D
  if(cau(uid)){b.textContent=m.free&&!m.inf?'Gefangen! Bleib stehen: Ein Teammitglied kann dich in 10 s befreien.':'Du wurdest gefangen und bist raus. Du siehst weiter dein Team.'}
  else if(!out)b.textContent='Spiel startet gleich…';
  else if(hd>0)b.textContent=mr==='h'?'Jäger warten noch '+fmt(hd)+'. Die Gejagten rennen!':'LOS! Vorsprung noch '+fmt(hd);
- else b.hidden=true;
+ else if(bad&&mr==='g'&&m.ocatch)b.textContent='⚠ Außerhalb des Kreises! Gefangen in '+fmt(m.ocatch*1000-(S.ot||0))+(m.oreveal&&S.oc>=m.oreveal*1000?' · Jäger sehen dich':'');else b.hidden=true;
  const me=S.pos&&M(S.pos,m.center);
  if(mr==='g'&&!cau(uid)&&out&&me&&S.pts&&S.pd)S.pts.forEach((p,i)=>{if(!(m.got||{})[i]&&!S.pd[i]&&Math.hypot(p.x-me.x,p.y-me.y)<=25){S.pd[i]=1;update(R(),{['meta/got/'+i]:uid,['players/'+uid+'/rev']:now+10000});toast('✓ Punkt! Die Jäger sehen dich 10 s')}});
  if(mr==='h'){let ac=0;for(const[id,p]of Object.entries(S.pl)){if(p.frt&&S.fs[id]!==p.frt){S.fs[id]=p.frt;S.fl[id]=now}if(S.fl[id]&&now-S.fl[id]<5000)ac=1}if(ac&&!S.fa)toast('⚠ Jemand wird gerade befreit!');S.fa=ac}else S.fa=0;
@@ -174,6 +181,20 @@ function botTick(){const m=S.meta;if(!S.code||!m)return;const now=Date.now(),u={
   if(z&&Math.hypot(P.x-z.x,P.y-z.y)>z.r*.9){tx=z.x;ty=z.y}
   if(tx!=null){const dx=tx-P.x,dy=ty-P.y,d=Math.hypot(dx,dy)||1,st=Math.min(sp,d);if(st>0){u['players/'+id+'/lat']=c.lat+(P.y+dy/d*st)/110540;u['players/'+id+'/lng']=c.lng+(P.x+dx/d*st)/(111320*Math.cos(c.lat*Math.PI/180));u['players/'+id+'/dist']=Math.round((b.dist||0)+st)}}}
  if(Object.keys(u).length)update(R(),u).catch(()=>{})}
+document.head.insertAdjacentHTML('beforeend','<style>#ibtn{position:fixed;right:12px;top:calc(172px + env(safe-area-inset-top,0px));z-index:1300;width:48px;height:48px;padding:0;font-size:22px;border-radius:50%}#info{position:fixed;inset:0;z-index:2600;display:none;flex-direction:column;gap:8px;overflow-y:auto;border-radius:0;padding-top:calc(14px + env(safe-area-inset-top,0px));font-size:15px;line-height:1.45}#info.on{display:flex}#info p{margin:0}#info h3{margin:10px 0 2px;font-size:16px;color:var(--cy)}</style>');
+document.body.insertAdjacentHTML('beforeend','<button id="ibtn" class="g" hidden>ⓘ</button><div id="info" class="card"><div class="row" style="flex:none"><b style="flex:3;align-self:center;font-size:18px" class="rd">ⓘ So wird gespielt</b><button id="icl" class="g" style="flex:1;padding:8px">✕</button></div><div id="ibody"></div></div>');
+$('#err').insertAdjacentHTML('beforebegin','<button id="ihome" class="g">ⓘ So wird gespielt</button>');
+function openInfo(){const m=S.meta,x=[];if(m){if(m.pts)x.push('★ Punkte');if(m.ping)x.push('Radar-Ping');if(m.alarm)x.push('Nähe-Alarm');if(m.free&&!m.inf)x.push('Befreien');if(m.inf)x.push('Infektion');if(m.ocatch||m.oreveal)x.push('Strafe außerhalb des Kreises')}
+ $('#ibody').innerHTML=(m?`<div class="card" style="padding:8px 10px"><b>In diesem Spiel aktiv:</b> ${x.length?x.join(' · '):'keine Extras'}</div>`:'')+`
+<h3>Die Idee</h3><p>Fangen spielen mit echten Standorten. Ein Teil der Gruppe sind <b class="rd">Jäger</b>, die anderen <b class="cy">Gejagte</b>. Alle laufen draußen herum, die App zeigt auf einer Karte, wer wo ist.</p>
+<h3>Ziel</h3><p><b class="rd">Jäger</b> fangen alle Gejagten. <b class="cy">Gejagte</b> bleiben frei, bis die Zeit abläuft. Sind ★ Punkte aktiv, müssen sie stattdessen alle Punkte einsammeln.</p>
+<h3>Ablauf</h3><p>1. Einer erstellt ein Spiel und schickt den 4-stelligen Code. Die anderen geben Namen und Code ein.<br>2. Der Host legt auf der Karte das Spielfeld fest (einfach tippen), stellt die Regeln ein und startet.<br>3. Die Rollen werden zufällig verteilt. Oben siehst du, ob du JÄGER oder GEJAGTER bist.<br>4. Die Gejagten bekommen einen kurzen Vorsprung, dann beginnt die Jagd.</p>
+<h3>Die Karte</h3><p>• <b class="rd">Roter Kreis</b> = Spielfeld. Bleib darin.<br>• <b class="cy">Gestrichelter türkiser Kreis</b> = so groß wird das Feld nach dem nächsten Schrumpfen. Der Kreis zieht sich live zusammen, lauf rechtzeitig hinein.<br>• Weißer Punkt = du. Du siehst nur dein eigenes Team.<br>• Außerhalb blinkt der Rand rot. Nach einer Weile droht eine Strafe.</p>
+<h3>Fangen</h3><p>Jäger tippen unten auf „Fangen“, wenn ein Gejagter höchstens 40 m entfernt ist, und wählen ihn aus. Gejagte können „Aufgeben“.</p>
+<h3>Extras (der Host schaltet sie ein)</h3><p>★ <b>Punkte:</b> Gejagte sammeln gelbe Punkte ein. Das verrät sie 10 Sekunden lang den Jägern.<br><b>Radar-Ping:</b> Jäger sehen die Gejagten kurz aufblitzen.<br><b>Nähe-Alarm:</b> Gejagte werden gewarnt, wenn ein Jäger näher als 50 m ist.<br><b>Befreien:</b> Ein Teammitglied bleibt 10 Sekunden bei einem Gefangenen und befreit ihn.<br><b>Infektion:</b> Gefangene werden selbst zu Jägern.<br>💬 <b>Chat:</b> mit dem Team, mit allen oder mit einzelnen Spielern.</p>
+<h3>Tipps</h3><p>Standort erlauben, Display anlassen und die Seite im Vordergrund lassen, sonst bricht das GPS ab. Genug Akku mitnehmen.</p>`;
+ $('#info').classList.add('on');$('#info').scrollTop=0}
+$('#ibtn').onclick=$('#ihome').onclick=openInfo;$('#icl').onclick=()=>$('#info').classList.remove('on');
 (async()=>{$('#nm').value=LS.g('mh_name')||'';S.name=$('#nm').value;
  if(!FC.apiKey||FC.apiKey.startsWith('DEIN')){$('#err').textContent='Firebase ist noch nicht eingerichtet (siehe README.md, Schritt 1).';$('#mk').disabled=$('#jn').disabled=true;return}
  try{const app=initializeApp(FC),au=getAuth(app);db=getDatabase(app);await au.authStateReady();uid=au.currentUser?au.currentUser.uid:(await signInAnonymously(au)).user.uid}
